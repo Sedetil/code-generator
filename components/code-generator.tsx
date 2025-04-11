@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Copy, Check, Save, RefreshCw, Download, Share2, Lightbulb, History, LogIn } from "lucide-react"
+import { Loader2, Copy, Check, Save, RefreshCw, Download, Share2, Lightbulb, History, LogIn, Image as ImageIcon, X } from "lucide-react"
 import { GoogleGenerativeAI, type GenerateContentRequest } from "@google/generative-ai"
 import { ErrorMessage } from "@/components/error-message"
 import { CodeEditor } from "@/components/code-editor"
@@ -43,6 +43,7 @@ const genAI = new GoogleGenerativeAI(apiKey)
 
 // Use a more widely available model
 const MODEL_NAME = "gemini-2.0-flash" // Fallback to a more common model name
+const VISION_MODEL_NAME = "gemini-2.0-flash" // Vision model for image processing
 
 // Extended language options
 const LANGUAGES = [
@@ -278,14 +279,82 @@ export function CodeGenerator() {
     }
   }, [generatedCode])
 
+  // Add new state variables for image handling
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUsingVision, setIsUsingVision] = useState(false)
+  
+  // Add function to handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImageFile(file)
+  
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImagePreview(event.target.result as string)
+          setIsUsingVision(true)
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Add function to handle drag and drop
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      
+      // Check if the file is an image
+      if (file.type.startsWith('image/')) {
+        setImageFile(file)
+        
+        // Create preview
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setImagePreview(event.target.result as string)
+            setIsUsingVision(true)
+          }
+        }
+        reader.readAsDataURL(file)
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (PNG, JPG, GIF, etc.)",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  // Add function to remove uploaded image
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setIsUsingVision(false)
+  }
+
+  // Modify the generateWithGemini function to handle images
   const generateWithGemini = async (promptText: string, params: ModelParametersType) => {
     if (!apiKey) {
       throw new Error("Google Generative AI API key is not configured")
     }
 
     try {
-      // For text-only input, use the gemini model
-      const model = genAI.getGenerativeModel({ model: MODEL_NAME })
+      // Choose model based on whether an image is included
+      const modelName = isUsingVision && imageFile ? VISION_MODEL_NAME : MODEL_NAME
+      const model = genAI.getGenerativeModel({ model: modelName })
 
       // Configure generation parameters
       const generationConfig = {
@@ -296,27 +365,54 @@ export function CodeGenerator() {
         stopSequences: params.stopSequences,
       }
 
+      // Create parts array based on whether an image is included
+      let parts = []
+      
+      if (isUsingVision && imageFile) {
+        // Convert image to base64 data URL if not already
+        let imageData = imagePreview
+        if (!imagePreview?.startsWith('data:')) {
+          const reader = new FileReader()
+          imageData = await new Promise<string>((resolve) => {
+            reader.onload = (e) => resolve(e.target?.result as string)
+            reader.readAsDataURL(imageFile)
+          })
+        }
+        
+        // Make sure imageData is not undefined and extract the base64 part
+        const base64Data = imageData?.split(',')[1] || ''
+        
+        // Add image and text to parts
+        parts = [
+          { text: promptText },
+          { inlineData: { mimeType: imageFile.type, data: base64Data } }
+        ]
+      } else {
+        // Text-only prompt
+        parts = [{ text: promptText }]
+      }
+
       // Create generation request
       const request: GenerateContentRequest = {
-        contents: [{ role: "user", parts: [{ text: promptText }] }],
+        contents: [{ role: "user", parts }],
         generationConfig,
         safetySettings: params.safetySettings
           ? [
               {
-                category: "HARM_CATEGORY_HARASSMENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                category: "HARM_CATEGORY_HARASSMENT" as any,
+                threshold: "BLOCK_MEDIUM_AND_ABOVE" as any,
               },
               {
-                category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                category: "HARM_CATEGORY_HATE_SPEECH" as any,
+                threshold: "BLOCK_MEDIUM_AND_ABOVE" as any,
               },
               {
-                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any,
+                threshold: "BLOCK_MEDIUM_AND_ABOVE" as any,
               },
               {
-                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any,
+                threshold: "BLOCK_MEDIUM_AND_ABOVE" as any,
               },
             ]
           : [],
@@ -342,8 +438,13 @@ export function CodeGenerator() {
     setExplanation("")
 
     try {
-      const systemPrompt =
-        "You are an expert programmer. Generate clean, efficient, and well-commented code based on the user's request. Only return the code without explanations, markdown formatting, or code block delimiters."
+      let systemPrompt = "You are an expert programmer. Generate clean, efficient, and well-commented code based on the user's request. Only return the code without explanations, markdown formatting, or code block delimiters."
+      
+      // Add image context to the prompt if using vision
+      if (isUsingVision && imageFile) {
+        systemPrompt += " I'm providing an image that contains visual information related to my request. Please analyze the image and use it to inform your code generation."
+      }
+      
       const fullPrompt = `${systemPrompt}\n\nGenerate ${language} code for: ${prompt}.`
 
       const text = await generateWithGemini(fullPrompt, modelParameters)
@@ -679,6 +780,59 @@ export function CodeGenerator() {
                   rows={4}
                   className="resize-none min-h-[100px]"
                 />
+              </div>
+
+              {/* Add image upload section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="image-upload" className="text-sm font-medium">
+                    Upload Image (Optional)
+                  </label>
+                  {imagePreview && (
+                    <Button variant="ghost" size="sm" onClick={removeImage} className="h-8 px-2">
+                      <X className="h-4 w-4 mr-1" /> Remove Image
+                    </Button>
+                  )}
+                </div>
+                
+                {imagePreview ? (
+                  <div className="relative mt-2 rounded-md overflow-hidden border border-muted">
+                    <img 
+                      src={imagePreview} 
+                      alt="Uploaded preview" 
+                      className="max-h-[200px] w-auto mx-auto object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div 
+                    className="flex items-center justify-center w-full"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
+                    <label
+                      htmlFor="image-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/20 hover:bg-muted/30"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <ImageIcon className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG or GIF</p>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                    </label>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Upload an image to generate code based on visual content (diagrams, screenshots, etc.)
+                </p>
               </div>
 
               <ModelParameters onChange={setModelParameters} />

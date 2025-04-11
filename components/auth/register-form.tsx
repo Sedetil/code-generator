@@ -15,7 +15,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Check } from "lucide-react"
-import ReCAPTCHA from "react-google-recaptcha"
+import { CustomCaptcha } from "@/components/ui/custom-captcha"
 import { supabase } from "@/lib/supabase"
 import { createUserProfile } from "@/lib/supabase-utils"
 
@@ -128,12 +128,12 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Register</CardTitle>
-        <CardDescription>Create a new account</CardDescription>
+    <Card className="w-full max-w-[360px] mx-auto">
+      <CardHeader className="space-y-1 pb-2 pt-4">
+        <CardTitle className="text-lg">Register</CardTitle>
+        <CardDescription className="text-sm">Create a new account</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-3">
         {isVerificationSent ? (
           <div className="text-center py-4 space-y-4">
             <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
@@ -152,19 +152,20 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+          <form onSubmit={handleRegister} className="space-y-2">
+            <div className="space-y-1">
+              <Label htmlFor="name" className="text-sm">Full Name</Label>
               <Input
                 id="name"
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                className="h-8 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -172,10 +173,11 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-8 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="text-sm">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -183,28 +185,28 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-8 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="confirmPassword" className="text-sm">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="h-8 text-sm"
               />
             </div>
 
-            <div className="flex justify-center my-4">
-              <ReCAPTCHA
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                onChange={handleCaptchaChange}
-              />
+            <div className="space-y-1">
+              <Label className="text-sm">CAPTCHA Verification</Label>
+              <CustomCaptcha onVerify={setCaptchaVerified} />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading || !captchaVerified}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full h-8 text-sm mt-1" disabled={isLoading || !captchaVerified}>
+              {isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
               Register
             </Button>
           </form>
@@ -212,8 +214,8 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
       </CardContent>
 
       {!isVerificationSent && (
-        <CardFooter className="flex justify-center">
-          <Button variant="link" onClick={onLoginClick}>
+        <CardFooter className="flex justify-center py-2">
+          <Button variant="link" onClick={onLoginClick} className="text-xs h-8">
             Already have an account? Login
           </Button>
         </CardFooter>

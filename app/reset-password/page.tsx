@@ -65,6 +65,7 @@ export default function ResetPassword() {
       toast({
         title: "Password updated",
         description: "Your password has been updated successfully",
+        variant: "default",
       })
 
       // Redirect to home page after a short delay

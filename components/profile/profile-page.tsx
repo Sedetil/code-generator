@@ -10,9 +10,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Camera, User, Lock, Shield, LogOut, AlertCircle } from "lucide-react"
+import { 
+  Loader2, 
+  Camera, 
+  User, 
+  Lock, 
+  Shield, 
+  LogOut, 
+  AlertCircle,
+  Trash2 
+} from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getUserProfile, createUserProfile, uploadAvatar } from "@/lib/supabase-utils"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function ProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -31,6 +50,9 @@ export function ProfilePage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isGoogleUser, setIsGoogleUser] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -204,6 +226,76 @@ export function ProfilePage() {
         description: "Failed to sign out. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!user || deleteConfirmText !== userData.email) return
+
+    setDeleting(true)
+    try {
+      // First delete user's data from snippets table
+      const { error: snippetsError } = await supabase
+        .from("snippets")
+        .delete()
+        .eq("user_id", user.id)
+
+      if (snippetsError) throw snippetsError
+
+      // Delete avatar from storage if one exists
+      if (userData.photoURL && userData.photoURL.includes("avatars/")) {
+        try {
+          const urlParts = userData.photoURL.split("avatars/")
+          if (urlParts.length > 1) {
+            const avatarPath = urlParts[1]
+            const { error: storageError } = await supabase
+              .storage
+              .from("avatars")
+              .remove([avatarPath])
+
+            if (storageError) console.error("Error deleting avatar:", storageError)
+          }
+        } catch (err) {
+          console.error("Error parsing avatar URL:", err)
+        }
+      }
+
+      // Delete user profile from profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", user.id)
+
+      if (profileError) throw profileError
+
+      // Delete the user account
+      const { error: userError } = await supabase.rpc('delete_user')
+      
+      if (userError) throw userError
+
+      // Ensure we sign out after account deletion
+      await supabase.auth.signOut()
+      
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted",
+      })
+      
+      // Clear any local storage or cookies that might keep session info
+      localStorage.removeItem('supabase.auth.token')
+      
+      // Use replace instead of push to prevent going back to profile page
+      router.replace("/")
+    } catch (error: any) {
+      console.error("Error deleting account:", error)
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete account. Please try again later.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleting(false)
+      setDeleteDialogOpen(false)
     }
   }
 
@@ -418,10 +510,76 @@ export function ProfilePage() {
                   </p>
                 </div>
               )}
+              
+              {/* Delete Account Section */}
+              <div className="space-y-2 border-t pt-6 mt-6">
+                <h3 className="text-lg font-medium flex items-center text-red-600 dark:text-red-400">
+                  <Trash2 className="h-5 w-5 mr-2" />
+                  Delete Account
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all associated data. This action cannot be undone.
+                </p>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setDeleteDialogOpen(true)} 
+                  className="flex items-center gap-2 mt-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Account
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">Delete Account</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                This will permanently delete your account and all associated data. 
+                This action <span className="font-bold">cannot be undone</span>.
+              </p>
+              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md border border-red-100 dark:border-red-800 text-sm">
+                <p className="font-medium text-red-800 dark:text-red-300">The following data will be permanently deleted:</p>
+                <ul className="list-disc list-inside space-y-1 mt-2 text-red-700 dark:text-red-300">
+                  <li>Your user profile and personal information</li>
+                  <li>All your saved code snippets</li>
+                  <li>Your profile picture</li>
+                  <li>All authentication data</li>
+                </ul>
+              </div>
+              <div className="pt-2">
+                <Label htmlFor="confirm-delete" className="text-sm font-medium">
+                  Type your email to confirm: <span className="font-bold">{userData.email}</span>
+                </Label>
+                <Input
+                  id="confirm-delete"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Enter your email"
+                  className="mt-2"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== userData.email || deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

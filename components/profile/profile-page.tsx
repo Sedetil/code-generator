@@ -301,8 +301,8 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[400pxx]">
+        <Loader2 className="h-8 w-8 animate-spi text-primaryn text-primary" />
       </div>
     )
   }

@@ -4,8 +4,8 @@ import { Code, Github } from "lucide-react"
 export function Footer() {
   return (
     <footer className="border-t bg-background">
-      <div className="container py-8 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="responsive-container py-6 sm:py-8 md:py-12">
+        <div className="responsive-grid-1-3 gap-6 md:gap-8">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Code className="h-5 w-5 text-primary" />

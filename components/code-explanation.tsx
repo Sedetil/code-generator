@@ -48,11 +48,11 @@ export function CodeExplanation({ explanation }: CodeExplanationProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-yellow-500" />
-        <CardTitle>Code Explanation</CardTitle>
+        <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+        <CardTitle className="text-base sm:text-lg">Code Explanation</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="prose dark:prose-invert max-w-none">{formatExplanation(explanation)}</div>
+      <CardContent className="responsive-px py-3 sm:py-4">
+        <div className="prose dark:prose-invert max-w-none text-sm sm:text-base">{formatExplanation(explanation)}</div>
       </CardContent>
     </Card>
   )

@@ -74,8 +74,8 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main className="container mx-auto py-10 px-4 md:px-6 flex-1 relative z-0">
-        <h1 className="text-3xl font-bold text-center mb-8">Gemini Code Generator</h1>
+      <main className="responsive-container py-6 sm:py-8 md:py-10 flex-1 relative z-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Gemini Code Generator</h1>
 
         {supabaseError && (
           <div

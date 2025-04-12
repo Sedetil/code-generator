@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 // Use a more widely available model
-const MODEL_NAME = "gemini-1.5-flash" // Fallback to a more common model name
+const MODEL_NAME = "gemini-2.0-flash" // Fallback to a more common model name
 
 export async function POST(req: NextRequest) {
   try {

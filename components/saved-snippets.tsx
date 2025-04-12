@@ -40,7 +40,7 @@ export function SavedSnippets({ snippets, onLoad, onDelete, isLoading = false }:
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-12">
+      <div className="flex items-center justify-center responsive-p">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading your saved snippets...</p>
@@ -66,7 +66,7 @@ export function SavedSnippets({ snippets, onLoad, onDelete, isLoading = false }:
           {filteredSnippets.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {snippets.length === 0 ? (
-                <div className="flex flex-col items-center space-y-2">
+                <div className="flex flex-col items-center responsive-gap">
                   <Save className="h-12 w-12 text-muted-foreground/50" />
                   <p>You haven't saved any snippets yet.</p>
                   <p className="text-sm">Generate some code and save it to see it here.</p>
@@ -80,15 +80,15 @@ export function SavedSnippets({ snippets, onLoad, onDelete, isLoading = false }:
               {filteredSnippets.map((snippet) => (
                 <Card key={snippet.id} className="overflow-hidden">
                   <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start responsive-gap">
                       <div>
                         <CardTitle className="text-lg">{snippet.title}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="responsive-flex-col-row items-center gap-2 mt-1 sm:mt-2">
                           <span className="text-xs px-2 py-1 bg-primary/10 rounded-full">{snippet.language}</span>
                           <span className="text-xs text-muted-foreground">{formatDate(snippet.createdAt)}</span>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 sm:gap-2">
                         <Button variant="ghost" size="icon" onClick={() => toggleExpand(snippet.id)} title="Preview">
                           <Eye className="h-4 w-4" />
                         </Button>

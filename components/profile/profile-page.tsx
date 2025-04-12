@@ -330,7 +330,7 @@ export function ProfilePage() {
   const tabs = getTabs()
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
+    <div className="responsive-container py-6 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
 
       <Tabs defaultValue="profile" className="w-full">
@@ -354,7 +354,7 @@ export function ProfilePage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleProfileUpdate} className="space-y-6">
-                <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+                <div className="responsive-flex-col-row items-center sm:items-start responsive-gap">
                   <div className="relative">
                     <Avatar className="h-24 w-24">
                       <AvatarImage src={photoPreview || userData.photoURL} alt={userData.displayName} />

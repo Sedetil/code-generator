@@ -75,14 +75,14 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="responsive-container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <Code className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl hidden sm:inline-block">Gemini Code</span>
+            <Code className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <span className="font-bold text-lg sm:text-xl hidden sm:inline-block">Gemini Code</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 ml-6">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6 ml-4 lg:ml-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}

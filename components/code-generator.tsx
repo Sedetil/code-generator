@@ -17,9 +17,12 @@ import { getSavedSnippets, deleteSnippet } from "@/lib/storage"
 import { SavedSnippets } from "@/components/saved-snippets"
 import { CodeExplanation } from "@/components/code-explanation"
 import { CodeComparison } from "@/components/code-comparison"
+import { CodePlayground } from "@/components/code-playground"
 import { AuthModal } from "./auth/auth-modal"
 import { supabase } from "@/lib/supabase"
 import { saveSnippet, getUserSnippets, deleteSnippet as deleteSupabaseSnippet } from "@/lib/supabase-utils"
+
+import { PromptSuggestions } from "@/components/prompt-suggestions"
 
 export type CodeSnippet = {
   id: string
@@ -112,6 +115,7 @@ export function CodeGenerator() {
   const [activeTab, setActiveTab] = useState("generate")
   const [explanation, setExplanation] = useState("")
   const [snippetTitle, setSnippetTitle] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [modelParameters, setModelParameters] = useState<ModelParametersType>({
     temperature: 0.7,
     topK: 40,
@@ -733,10 +737,10 @@ export function CodeGenerator() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="generate" className="text-sm sm:text-base">
+          <TabsTrigger value="generate" className="responsive-text-sm">
             Generate Code
           </TabsTrigger>
-          <TabsTrigger value="saved" className="text-sm sm:text-base">
+          <TabsTrigger value="saved" className="responsive-text-sm">
             Saved Snippets
           </TabsTrigger>
         </TabsList>
@@ -753,7 +757,7 @@ export function CodeGenerator() {
                   Programming Language
                 </label>
                 <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger id="language" className="w-full sm:w-1/3">
+                  <SelectTrigger id="language" className="w-full sm:w-2/3 md:w-1/2 lg:w-1/3">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
                   <SelectContent>
@@ -772,14 +776,25 @@ export function CodeGenerator() {
                 <label htmlFor="prompt" className="text-sm font-medium">
                   Describe what you want
                 </label>
-                <Textarea
-                  id="prompt"
-                  placeholder="E.g., Create a function that sorts an array of objects by a specific property"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={4}
-                  className="resize-none min-h-[100px]"
-                />
+                <div className="relative">
+                  <Textarea
+                    id="prompt"
+                    placeholder="E.g., Create a function that sorts an array of objects by a specific property"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    rows={4}
+                    className="resize-none min-h-[100px]"
+                  />
+                  <PromptSuggestions 
+                    inputValue={prompt} 
+                    onSelectSuggestion={(suggestion) => {
+                      setPrompt(suggestion);
+                      setShowSuggestions(false);
+                    }} 
+                    isVisible={showSuggestions}
+                  />
+                </div>
               </div>
 
               {/* Add image upload section */}
@@ -840,7 +855,7 @@ export function CodeGenerator() {
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt || isGenerating}
-                className="w-full sm:w-auto"
+                className="responsive-w-full-auto"
                 size="lg"
               >
                 {isGenerating ? (
@@ -912,11 +927,16 @@ export function CodeGenerator() {
 
                   <CodeEditor value={editableCode} onChange={setEditableCode} language={language} />
 
+                  {/* Add Code Preview & Playground for HTML/CSS/JS */}
+                  {["html", "css", "javascript", "typescript"].includes(language.toLowerCase()) && (
+                    <CodePlayground code={editableCode} language={language} title={snippetTitle} />
+                  )}
+
                   <div className="flex flex-wrap gap-2 pt-2">
                     <Button
                       onClick={handleRegenerateFromEdited}
                       disabled={!editableCode || isGenerating}
-                      className="flex-1 sm:flex-none"
+                      className="responsive-w-full-auto"
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Improve Code
@@ -926,7 +946,7 @@ export function CodeGenerator() {
                       <Button
                         onClick={handleSaveSnippet}
                         disabled={!editableCode || !snippetTitle}
-                        className="flex-1 sm:flex-none"
+                        className="responsive-w-full-auto"
                       >
                         <Save className="mr-2 h-4 w-4" />
                         Save Snippet
@@ -935,7 +955,7 @@ export function CodeGenerator() {
                       <Button
                         onClick={() => setIsAuthModalOpen(true)}
                         variant="outline"
-                        className="flex-1 sm:flex-none"
+                        className="responsive-w-full-auto"
                       >
                         <LogIn className="mr-2 h-4 w-4" />
                         Login to Save
@@ -946,7 +966,7 @@ export function CodeGenerator() {
                       variant="outline"
                       onClick={handleExplainCode}
                       disabled={!editableCode || isExplaining}
-                      className="flex-1 sm:flex-none"
+                      className="responsive-w-full-auto"
                     >
                       <Lightbulb className="mr-2 h-4 w-4" />
                       {isExplaining ? "Explaining..." : "Explain Code"}
